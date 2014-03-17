@@ -19,7 +19,7 @@ app.AppView = Backbone.View.extend({
     'keypress #new-todo': 'createOnEnter',
     'click #clear-completed': 'clearCompleted',
     'click #toggle-all': 'toggleAllComplete'
-  }
+  },
 
   // At initialization we bind to the relevant events on the `Todos`
   // // collection, when items are added or changed.
@@ -63,8 +63,9 @@ app.AppView = Backbone.View.extend({
       this.$footer.hide();
     }
 
-    this.allCheckbox.checked = !remaining;
-  },
+    // Note: allCheckbox is positioned absolutely via CSS but it is part of the
+    // #main div and so is not shown when there are no todos
+    this.allCheckbox.checked = !remaining; },
 
   // Add a single todo item to the list by creating a view for it, and
   // appending its element to the `<ul>`.
@@ -79,6 +80,48 @@ app.AppView = Backbone.View.extend({
     app.Todos.each(this.addOne, this);
   },
 
-  // TODO stopped here
+  filterOne: function (todo) {
+    todo.trigger('visible');
+  },
 
+  filterAll: function () {
+    app.Todos.each(this.filterOne, this);
+  },
+
+  // Generate the attributes for a new Todo item
+  newAttributes: function() {
+    return {
+      title: this.$input.val().trim(),
+      order: app.Todos.nextOrder(),
+      completed: false
+    };
+  },
+
+  // If you hit return in the main input field, create new Todo model,
+  // persisting it to localStorage
+  createOnEnter: function( event ){
+    // event.which is a jQuery event property that normalizes keyCode and charCode
+    if (event.which !== ENTER_KEY || !this.$input.val().trim() ) {
+      return;
+    }
+
+    app.Todos.create( this.newAttributes() );
+    this.$input.val('');
+  },
+
+  // Clear all completed todo items, destroying their models.
+  clearCompleted: function() {
+    _.invoke(app.Todos.completed(), 'destroy');
+    return false;
+  },
+
+  toggleAllComplete: function() {
+    var completed = this.allCheckbox.checked;
+
+    app.Todos.each( function( todo ) {
+      todo.save({
+        'completed': completed
+      });
+    });
+  }
 });
