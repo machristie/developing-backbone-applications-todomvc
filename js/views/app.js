@@ -36,6 +36,8 @@ app.AppView = Backbone.View.extend({
     this.listenTo( app.Todos, 'change:completed', this.filterOne);
     this.listenTo( app.Todos, 'filter', this.filterAll);
     this.listenTo( app.Todos, 'all', this.render);
+
+    app.Todos.fetch();
   },
 
   // Re-rendering the App just means refresing the statistics -- the rest of
