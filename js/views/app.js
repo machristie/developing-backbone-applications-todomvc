@@ -1,129 +1,139 @@
-
 var app = app || {};
 
 // The Application
 // ---------------
 
 // Our overall **AppView** is the top-level piece of UI.
-app.AppView = Backbone.View.extend({
+define([
+    'jquery',
+    'underscore',
+    'backbone',
+    'collections/todos',
+    'views/todos',
+    'text!templates/stats.html'
+    ], function($, _, Backbone, Todos, TodoView, statsTemplate) {
+  var AppView = Backbone.View.extend({
 
-  // Instead of generating a new eleemnt, bind to the existing skeleton of
-  // the App already present in the HTML.
-  el: '#todoapp',
+    // Instead of generating a new eleemnt, bind to the existing skeleton of
+    // the App already present in the HTML.
+    el: '#todoapp',
 
-  // Our template for the line of statistics at the bottom of the app.
-  statsTemplate: _.template( $('#stats-template').html() ),
+    // Our template for the line of statistics at the bottom of the app.
+    statsTemplate: _.template( statsTemplate ),
 
-  // Delegated events for creating new items, and clearing completed ones.
-  events: {
-    'keypress #new-todo': 'createOnEnter',
-    'click #clear-completed': 'clearCompleted',
-    'click #toggle-all': 'toggleAllComplete'
-  },
+    // Delegated events for creating new items, and clearing completed ones.
+    events: {
+      'keypress #new-todo': 'createOnEnter',
+      'click #clear-completed': 'clearCompleted',
+      'click #toggle-all': 'toggleAllComplete'
+    },
 
-  // At initialization we bind to the relevant events on the `Todos`
-  // // collection, when items are added or changed.
-  initialize: function() {
-    // this.$() finds elements relative to this.$el
-    this.allCheckbox = this.$('#toggle-all')[0];
-    this.$input = this.$('#new-todo');
-    this.$footer = this.$('#footer');
-    this.$main = this.$('#main');
+    // At initialization we bind to the relevant events on the `Todos`
+    // // collection, when items are added or changed.
+    initialize: function() {
+      // this.$() finds elements relative to this.$el
+      this.allCheckbox = this.$('#toggle-all')[0];
+      this.$input = this.$('#new-todo');
+      this.$footer = this.$('#footer');
+      this.$main = this.$('#main');
 
-    this.listenTo( app.Todos, 'add', this.addOne);
-    this.listenTo( app.Todos, 'reset', this.addAll);
+      this.listenTo( Todos, 'add', this.addOne);
+      this.listenTo( Todos, 'reset', this.addAll);
 
-    this.listenTo( app.Todos, 'change:completed', this.filterOne);
-    this.listenTo( app.Todos, 'filter', this.filterAll);
-    this.listenTo( app.Todos, 'all', this.render);
+      this.listenTo( Todos, 'change:completed', this.filterOne);
+      this.listenTo( Todos, 'filter', this.filterAll);
+      this.listenTo( Todos, 'all', this.render);
 
-    app.Todos.fetch();
-  },
+      Todos.fetch();
+    },
 
-  // Re-rendering the App just means refresing the statistics -- the rest of
-  // the app doesn't change
-  render: function() {
-    var completed = app.Todos.completed().length;
-    var remaining = app.Todos.remaining().length;
+    // Re-rendering the App just means refresing the statistics -- the rest of
+    // the app doesn't change
+    render: function() {
+      var completed = Todos.completed().length;
+      var remaining = Todos.remaining().length;
 
-    if ( app.Todos.length ) {
+      if ( Todos.length ) {
 
-      this.$main.show();
-      this.$footer.show();
+        this.$main.show();
+        this.$footer.show();
 
-      this.$footer.html(this.statsTemplate({
-        completed: completed,
-        remaining: remaining
-      }));
+        this.$footer.html(this.statsTemplate({
+          completed: completed,
+          remaining: remaining
+        }));
 
-      this.$('#filters li a')
-        .removeClass('selected')
-        .filter('[href="#/' + ( app.TodoFilter || '' ) + '"]')
-        .addClass('selected');
-    } else {
-      this.$main.hide();
-      this.$footer.hide();
-    }
+        this.$('#filters li a')
+          .removeClass('selected')
+          .filter('[href="#/' + ( app.TodoFilter || '' ) + '"]')
+          .addClass('selected');
+      } else {
+        this.$main.hide();
+        this.$footer.hide();
+      }
 
-    // Note: allCheckbox is positioned absolutely via CSS but it is part of the
-    // #main div and so is not shown when there are no todos
-    this.allCheckbox.checked = !remaining; },
+      // Note: allCheckbox is positioned absolutely via CSS but it is part of the
+      // #main div and so is not shown when there are no todos
+      this.allCheckbox.checked = !remaining; },
 
-  // Add a single todo item to the list by creating a view for it, and
-  // appending its element to the `<ul>`.
-  addOne: function( todo ) {
-    var view = new app.TodoView({ model: todo });
-    $('#todo-list').append( view.render().el );
-  },
+    // Add a single todo item to the list by creating a view for it, and
+    // appending its element to the `<ul>`.
+    addOne: function( todo ) {
+      var view = new TodoView({ model: todo });
+      $('#todo-list').append( view.render().el );
+    },
 
-  // Add all items in the **Todos** collection at once.
-  addAll: function() {
-    this.$('#todo-list').html('');
-    app.Todos.each(this.addOne, this);
-  },
+    // Add all items in the **Todos** collection at once.
+    addAll: function() {
+      this.$('#todo-list').html('');
+      Todos.each(this.addOne, this);
+    },
 
-  filterOne: function (todo) {
-    todo.trigger('visible');
-  },
+    filterOne: function (todo) {
+      todo.trigger('visible');
+    },
 
-  filterAll: function () {
-    app.Todos.each(this.filterOne, this);
-  },
+    filterAll: function () {
+      Todos.each(this.filterOne, this);
+    },
 
-  // Generate the attributes for a new Todo item
-  newAttributes: function() {
-    return {
-      title: this.$input.val().trim(),
-      order: app.Todos.nextOrder(),
-      completed: false
-    };
-  },
+    // Generate the attributes for a new Todo item
+    newAttributes: function() {
+      return {
+        title: this.$input.val().trim(),
+        order: Todos.nextOrder(),
+        completed: false
+      };
+    },
 
-  // If you hit return in the main input field, create new Todo model,
-  // persisting it to localStorage
-  createOnEnter: function( event ){
-    // event.which is a jQuery event property that normalizes keyCode and charCode
-    if (event.which !== ENTER_KEY || !this.$input.val().trim() ) {
-      return;
-    }
+    // If you hit return in the main input field, create new Todo model,
+    // persisting it to localStorage
+    createOnEnter: function( event ){
+      // event.which is a jQuery event property that normalizes keyCode and charCode
+      if (event.which !== ENTER_KEY || !this.$input.val().trim() ) {
+        return;
+      }
 
-    app.Todos.create( this.newAttributes() );
-    this.$input.val('');
-  },
+      Todos.create( this.newAttributes() );
+      this.$input.val('');
+    },
 
-  // Clear all completed todo items, destroying their models.
-  clearCompleted: function() {
-    _.invoke(app.Todos.completed(), 'destroy');
-    return false;
-  },
+    // Clear all completed todo items, destroying their models.
+    clearCompleted: function() {
+      _.invoke(Todos.completed(), 'destroy');
+      return false;
+    },
 
-  toggleAllComplete: function() {
-    var completed = this.allCheckbox.checked;
+    toggleAllComplete: function() {
+      var completed = this.allCheckbox.checked;
 
-    app.Todos.each( function( todo ) {
-      todo.save({
-        'completed': completed
+      Todos.each( function( todo ) {
+        todo.save({
+          'completed': completed
+        });
       });
-    });
-  }
+    }
+  });
+
+  return AppView;
 });

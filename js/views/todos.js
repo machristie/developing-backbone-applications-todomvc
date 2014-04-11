@@ -1,93 +1,102 @@
-
 var app = app || {};
 
 // Todo Item View
 // --------------
 
 // The DOM element for a todo item...
-app.TodoView = Backbone.View.extend({
+define([
+    'jquery',
+    'underscore',
+    'backbone',
+    'text!templates/todos.html'
+    ], function($, _, Backbone, todosTemplate) {
 
-  //... is a list tag.
-  tagName: 'li',
+  var TodoView = Backbone.View.extend({
 
-  // Cache the template function for a single item.
-  template: _.template( $('#item-template').html() ),
+    //... is a list tag.
+    tagName: 'li',
 
-  // The DOM events specific to an item.
-  events: {
-    'click .toggle': 'togglecompleted',
-    'dblclick label': 'edit',
-    'click .destroy': 'clear',
-    'keypress .edit': 'updateOnEnter',
-    'blur .edit': 'close'
-  },
+    // Cache the template function for a single item.
+    template: _.template( todosTemplate ),
 
-  // The TodoView listens for changes to its model, re-rendering. Since there's
-  // a one-to-one correspondence between a **Todo** and a **TodoView** in this
-  // app, we set a direct reference on the model for convenience.
-  initialize: function() {
-    this.listenTo(this.model, 'change', this.render);
-    this.listenTo(this.model, 'destroy', this.remove);
-    this.listenTo(this.model, 'visible', this.toggleVisible);
-  },
+    // The DOM events specific to an item.
+    events: {
+      'click .toggle': 'togglecompleted',
+      'dblclick label': 'edit',
+      'click .destroy': 'clear',
+      'keypress .edit': 'updateOnEnter',
+      'blur .edit': 'close'
+    },
 
-  // Re-renders the titles of the todo item.
-  render: function() {
-    this.$el.html( this.template( this.model.toJSON() ) );
+    // The TodoView listens for changes to its model, re-rendering. Since there's
+    // a one-to-one correspondence between a **Todo** and a **TodoView** in this
+    // app, we set a direct reference on the model for convenience.
+    initialize: function() {
+      this.listenTo(this.model, 'change', this.render);
+      this.listenTo(this.model, 'destroy', this.remove);
+      this.listenTo(this.model, 'visible', this.toggleVisible);
+    },
 
-    this.$el.toggleClass( 'completed', this.model.get('completed') );
-    this.toggleVisible();
+    // Re-renders the titles of the todo item.
+    render: function() {
+      this.$el.html( this.template( this.model.toJSON() ) );
 
-    this.$input = this.$('.edit');
-    return this;
-  },
+      this.$el.toggleClass( 'completed', this.model.get('completed') );
+      this.toggleVisible();
 
-  // Toggles visibility of the item
-  toggleVisible: function() {
-    this.$el.toggleClass( 'hidden', this.isHidden() );
-  },
+      this.$input = this.$('.edit');
+      return this;
+    },
 
-  // Determines if the item should be hidden
-  isHidden: function() {
-    var isCompleted = this.model.get('completed');
-    return ( // hidden cases only
-        (!isCompleted && app.TodoFilter === 'completed')
-        || (isCompleted && app.TodoFilter === 'active')
-    );
-  },
+    // Toggles visibility of the item
+    toggleVisible: function() {
+      this.$el.toggleClass( 'hidden', this.isHidden() );
+    },
 
-  togglecompleted: function() {
-    this.model.toggle();
-  },
+    // Determines if the item should be hidden
+    isHidden: function() {
+      var isCompleted = this.model.get('completed');
+      return ( // hidden cases only
+          (!isCompleted && app.TodoFilter === 'completed')
+          || (isCompleted && app.TodoFilter === 'active')
+      );
+    },
 
-  // Switch this view into `"editing"` mode, displaying the input field
-  edit: function() {
-    this.$el.addClass('editing');
-    this.$input.focus();
-  },
+    togglecompleted: function() {
+      this.model.toggle();
+    },
 
-  // Close the `"editing"` mode, saving changes to the todo.
-  close: function() {
-    var value = this.$input.val().trim();
+    // Switch this view into `"editing"` mode, displaying the input field
+    edit: function() {
+      this.$el.addClass('editing');
+      this.$input.focus();
+    },
 
-    if ( value ) {
-      this.model.save({ title: value });
-    } else {
-      this.clear();
+    // Close the `"editing"` mode, saving changes to the todo.
+    close: function() {
+      var value = this.$input.val().trim();
+
+      if ( value ) {
+        this.model.save({ title: value });
+      } else {
+        this.clear();
+      }
+
+      this.$el.removeClass('editing');
+    },
+
+    // If you hit `enter`, we're through editing the item.
+    updateOnEnter: function( e ){
+      if (e.which === ENTER_KEY ) {
+        this.close();
+      }
+    },
+
+    // Remove the item, destroy the model from *localStorage* and delete its view
+    clear: function() {
+      this.model.destroy();
     }
+  });
 
-    this.$el.removeClass('editing');
-  },
-
-  // If you hit `enter`, we're through editing the item.
-  updateOnEnter: function( e ){
-    if (e.which === ENTER_KEY ) {
-      this.close();
-    }
-  },
-
-  // Remove the item, destroy the model from *localStorage* and delete its view
-  clear: function() {
-    this.model.destroy();
-  }
+  return TodoView;
 });

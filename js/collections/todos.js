@@ -1,44 +1,50 @@
 
-var app = app || {};
-
 // Todo Collection
 // ---------------
 
 // The collection of todos is backed by *localStorage* instead of a remote
 // server.
-var TodoList = Backbone.Collection.extend({
+define([
+    'underscore',
+    'backbone',
+    'localStorage',
+    'models/todo'
+    ], function(_, Backbone, Store, Todo) {
 
-  // Reference to this collection's model
-  model: app.Todo,
+  var TodoList = Backbone.Collection.extend({
 
-  // Save all of the todo items under the `"todos-backbone"` namespace.
-  localStorage: new Backbone.LocalStorage('todos-backbone'),
+    // Reference to this collection's model
+    model: Todo,
 
-  completed: function() {
-    return this.filter( function( todo ) {
-      return todo.get('completed');
-    });
-  },
+    // Save all of the todo items under the `"todos-backbone"` namespace.
+    localStorage: new Backbone.LocalStorage('todos-backbone'),
 
-  // Filter down the list to only todo items that are still not finished.
-  // TODO: question: how does 'without' work?
-  remaining: function() {
-    return this.without.apply( this, this.completed() );
-  },
+    completed: function() {
+      return this.filter( function( todo ) {
+        return todo.get('completed');
+      });
+    },
 
-  // We keep the Todoes in sequential order, despite being saved by unordered
-  // GUID in the database. This generates the next order number for new items.
-  nextOrder: function() {
-    if ( !this.length ){
-      return 1;
+    // Filter down the list to only todo items that are still not finished.
+    // TODO: question: how does 'without' work?
+    remaining: function() {
+      return this.without.apply( this, this.completed() );
+    },
+
+    // We keep the Todoes in sequential order, despite being saved by unordered
+    // GUID in the database. This generates the next order number for new items.
+    nextOrder: function() {
+      if ( !this.length ){
+        return 1;
+      }
+      return this.last().get('order') + 1;
+    },
+
+    // Todos are sorted by their original insertion order.
+    comparator: function( todo ){
+      return todo.get('order');
     }
-    return this.last().get('order') + 1;
-  },
+  });
 
-  // Todos are sorted by their original insertion order.
-  comparator: function( todo ){
-    return todo.get('order');
-  }
+  return new TodoList();
 });
-
-app.Todos = new TodoList();

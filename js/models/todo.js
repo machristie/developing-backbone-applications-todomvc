@@ -1,23 +1,30 @@
 
-var app = app || {};
-
 // Todo Model
 // ----------
-// Out basic **Todo** model has a `title` and `completed` attributes
 
-app.Todo = Backbone.Model.extend({
+define(['underscore', 'backbone'], function(_, Backbone) {
+  var TodoModel = Backbone.Model.extend({
 
-  // Default attributes ensure that each todo created has `title` and `completed` keys.
-  defaults: {
-    title: '',
-    completed: false
-  },
+    defaults: {
+      title: '',
+      completed: false
+    },
 
-  // Toggle the `completed` state of this todo item.
-  toggle: function() {
+    // Toggle the `done` state of this todo item.
+    toggle: function() {
 
-    this.save({
-      completed: !this.get('completed')
-    });
-  }
+      this.save({
+        completed: !this.get('completed')
+      });
+    },
+
+    // Remove this Todo from *localStorage* and delete its view.
+    clear: function() {
+      this.destroy();
+      this.view.remove();
+    }
+      
+  });
+
+  return TodoModel;
 });
